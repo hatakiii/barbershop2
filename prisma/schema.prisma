@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Salon {
+  id             Int              @id @default(autoincrement()) @map("id")
+  name           String           @map("name") @db.VarChar(100)
+  salonImage     String?          @db.VarChar(500)
+  salonAddress   String?          @db.VarChar(500)
+  managerId      String?
+  lat            Float?
+  lng            Float?
+  barbers        Barber[]
+  orders         orders[]
+  salon_services salon_services[]
+  users          User[]
+
+  @@map("salons")
+}
+
+model Service {
+  id             Int              @id @default(autoincrement()) @map("id")
+  name           String?          @map("name") @db.VarChar(100)
+  createdAt      DateTime         @default(now())
+  orders         orders[]
+  salon_services salon_services[]
+
+  @@map("services")
+}
+
+model Barber {
+  id          Int      @id @default(autoincrement()) @map("id")
+  salon_id    Int?
+  name        String?  @map("name") @db.VarChar(100)
+  phoneNumber String?
+  avatarUrl   String?  @map("avatarUrl")
+  salons      Salon?   @relation(fields: [salon_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "barbers_category_id_fkey")
+  orders      orders[]
+  users       User[]
+
+  @@map("barbers")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  password String  @unique
+  email    String  @unique @db.VarChar(50)
+  name     String? @db.VarChar(59)
+  role     String? @db.VarChar
+  salon_id Int?
+  barberId Int?    @map("barberid")
+  barber   Barber? @relation(fields: [barberId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  salons   Salon?  @relation(fields: [salon_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_categoryid_fkey")
+
+  @@map("users")
+}
+
+model orders {
+  id               Int      @id @default(autoincrement())
+  salonid          Int
+  serviceid        Int
+  barberid         Int
+  reserveddatetime DateTime @db.Timestamptz(6)
+  totalprice       Int
+  phonenumber      Int
+  clerkUserId      String?  @db.VarChar(255)
+  barbers          Barber   @relation(fields: [barberid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  salons           Salon    @relation(fields: [salonid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  services         Service  @relation(fields: [serviceid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([barberid, reserveddatetime], map: "unique_slot")
+}
+
+model salon_services {
+  id        Int     @id @default(autoincrement())
+  salonid   Int
+  serviceid Int
+  price     Int
+  salons    Salon   @relation(fields: [salonid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_salon")
+  services  Service @relation(fields: [serviceid], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_service")
+}
