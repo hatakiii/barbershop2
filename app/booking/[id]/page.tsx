@@ -6,6 +6,7 @@ import { Salon, Service, Barber } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { format, isWeekend } from "date-fns";
 import { ALL_TIMES } from "@/lib/get-data";
+import { useAuth } from "@clerk/nextjs";
 
 import StepService from "./_components/StepService";
 import StepBarber from "./_components/StepBarber";
@@ -47,6 +48,10 @@ export default function SalonBookingPage() {
 
   const formatted = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
 
+  const { getToken, isSignedIn } = useAuth();
+
+  console.log("issigneed in", isSignedIn, typeof isSignedIn);
+
   // Fetch salon info
   useEffect(() => {
     const fetchSalon = async () => {
@@ -85,12 +90,24 @@ export default function SalonBookingPage() {
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handlePayment = async () => {
+    // 1. Check Clerk session at the moment of clicking
+    try {
+      const token = await getToken({ template: "default" });
+      if (!token) {
+        return toast.error("Та цаг захиалахын тулд нэвтэрнэ үү.");
+      }
+    } catch (err) {
+      return toast.error("Сэшн шалгахад алдаа гарлаа. Дахин нэвтэрнэ үү.");
+    }
+
+    // 2. Validate form inputs
     if (!salon || !selectedService || !selectedBarber || !selectedTime)
       return toast.error("Мэдээлэл дутуу байна!");
 
     if (!/^\d{8,10}$/.test(phoneNumber))
       return toast.error("Утасны дугаар буруу байна!");
 
+    // 3. Proceed with saving order
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -112,7 +129,7 @@ export default function SalonBookingPage() {
         toast.success("Цаг амжилттай бүртгэгдсэн!");
         setBookedTimes((prev) => [...prev, selectedTime]);
         setSelectedTime(null);
-        setPhoneNumber(""); // Хэрэглэгчийн утасны field-ийг цэвэрлэх
+        setPhoneNumber("");
       } else {
         toast.error(data.message || "Алдаа гарлаа!");
       }
