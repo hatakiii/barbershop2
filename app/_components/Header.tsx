@@ -30,34 +30,28 @@ export function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <a
-              href="#home"
+              href="/admin"
               className="hover:text-primary transition-colors dark:text-white"
             >
-              Нүүр
+              Admin
             </a>
             <a
-              href="#services"
+              href="/booking"
               className="hover:text-primary transition-colors dark:text-white"
             >
-              Үйлчилгээ
+              Цаг захиалах
             </a>
             <a
-              href="#team"
+              href="/barbers"
               className="hover:text-primary transition-colors dark:text-white"
             >
-              Бид
+              Манай баг
             </a>
             <a
-              href="#gallery"
+              href="/salon"
               className="hover:text-primary transition-colors dark:text-white"
             >
-              Блог
-            </a>
-            <a
-              href="#contact"
-              className="hover:text-primary transition-colors dark:text-white"
-            >
-              Холбогдох
+              Салонууд
             </a>
           </nav>
 

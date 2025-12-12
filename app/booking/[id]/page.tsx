@@ -48,7 +48,7 @@ export default function SalonBookingPage() {
 
   const formatted = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
 
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
 
   console.log("issigneed in", isSignedIn, typeof isSignedIn);
 
@@ -90,28 +90,52 @@ export default function SalonBookingPage() {
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handlePayment = async () => {
-    // 1. Check Clerk session at the moment of clicking
-    try {
-      const token = await getToken({ template: "default" });
-      if (!token) {
-        return toast.error("Та цаг захиалахын тулд нэвтэрнэ үү.");
-      }
-    } catch (err) {
-      return toast.error("Сэшн шалгахад алдаа гарлаа. Дахин нэвтэрнэ үү.");
+    // 1. Clerk бүрэн load болсон эсэх
+    if (!isLoaded) {
+      return toast.error("Нэвтрэлтийн төлөв ачааллаж байна. Түр хүлээнэ үү.");
     }
 
-    // 2. Validate form inputs
-    if (!salon || !selectedService || !selectedBarber || !selectedTime)
+    // 2. Нэвтэрсэн эсэх
+    if (!isSignedIn) {
+      return toast.error("Та цаг захиалахын тулд нэвтэрнэ үү.");
+    }
+
+    // 3. Token авахыг оролдох
+    let token;
+    try {
+      token = await getToken();
+      if (!token) {
+        return toast.error(
+          "Нэвтрэлтийн сэшн хүчингүй байна. Дахин нэвтэрнэ үү."
+        );
+      }
+    } catch (err) {
+      console.error("TOKEN ERROR: ", err);
+      return toast.error("Нэвтрэлтийн сэшн шалгахад алдаа гарлаа.");
+    }
+
+    // 4. Салон шалгах
+    if (!salon) {
+      return toast.error("Салон мэдээлэл ачаалагдаагүй байна.");
+    }
+
+    // 5. Input validation
+    if (!selectedService || !selectedBarber || !selectedTime || !formatted) {
       return toast.error("Мэдээлэл дутуу байна!");
+    }
 
-    if (!/^\d{8,10}$/.test(phoneNumber))
+    if (!/^\d{8,10}$/.test(phoneNumber)) {
       return toast.error("Утасны дугаар буруу байна!");
+    }
 
-    // 3. Proceed with saving order
+    // 6. Захиалга илгээх
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           salonId: salon.id,
           serviceId: selectedService.id,
@@ -133,9 +157,9 @@ export default function SalonBookingPage() {
       } else {
         toast.error(data.message || "Алдаа гарлаа!");
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Server error, try again later.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Сервертэй холбогдоход алдаа гарлаа.");
     }
   };
 
