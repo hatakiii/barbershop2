@@ -22,6 +22,8 @@ export const SalonContainer = () => {
       .then((data) => setSalons(data));
   }, []);
 
+  console.log("salon", salons, typeof salons);
+
   return (
     <div className="flex flex-col gap-6 py-6">
       <p className="text-center text-xl font-semibold">✨ Топ салонууд ✨</p>
